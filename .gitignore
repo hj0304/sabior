@@ -1,0 +1,28 @@
+# 가상환경·캐시
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# 비밀 정보
+.env
+
+# 데이터 (원본·중간·산출물은 git 제외, 폴더 표식만 유지)
+data/raw/*
+!data/raw/.gitkeep
+data/interim/*
+!data/interim/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+data/*.duckdb
+data/*.duckdb.wal
+
+# 실험·모델 산출물
+mlruns/
+finetune/outputs/
+finetune/checkpoints/
+*.gguf
+*.safetensors
+*.bin
