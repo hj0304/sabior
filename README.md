@@ -53,7 +53,8 @@ uv sync --group serve            # P5 서비스
 ## VRAM 실측 (W1 게이트)
 
 ```bash
-uv run --group finetune python scripts/vram_probe.py --model Qwen/Qwen3-4B --seq-len 2048 --batch 2
+uv run --group finetune python scripts/vram_probe.py --model Qwen/Qwen3-4B-Instruct-2507 --seq-len 2048 --batch 2
+uv run --group finetune python scripts/vram_probe.py --model skt/A.X-4.0-Light --seq-len 1024 --batch 1
 uv run --group finetune python scripts/vram_probe.py --model Qwen/Qwen3-8B --seq-len 1024 --batch 1
 ```
 
