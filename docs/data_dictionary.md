@@ -8,6 +8,7 @@
 - ID 접두: `KBO_`, `MLB_`. 외부 ID 는 `player_external_ids`.
 - 이닝은 `ip_outs`(아웃 수). 표시 변환은 `stats.pitching.ip_display`.
 - 금액은 `DECIMAL(18,2)` + `currency`. KBO 는 KRW 원 단위 정수, MLB 는 USD.
+- `source` (v1.1, ADR 0008): 행의 출처. 'lahman', 'yagoonara', 'kbo_official', 'news_manual', 'naver'(사용 시). 공개 서비스에는 권리가 확보된 source 만 노출한다. `players`, `team_seasons`, `batting_seasons`, `pitching_seasons`, `fielding_seasons`, `contracts`, `transactions`, `drafts` 에 존재.
 
 ## 테이블
 

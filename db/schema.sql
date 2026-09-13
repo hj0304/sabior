@@ -252,3 +252,14 @@ CREATE TABLE IF NOT EXISTS ingest_log (
 
 INSERT OR IGNORE INTO leagues VALUES ('KBO', 'KBO 리그', 'KR');
 INSERT OR IGNORE INTO leagues VALUES ('MLB', 'Major League Baseball', 'US');
+
+-- v1.1 (2026-09-13, ADR 0008): 사실 테이블에 source 컬럼. 소스가 바뀌어도 스키마는 유지한다.
+-- 값 예: 'lahman', 'yagoonara', 'kbo_official', 'news_manual'. 기존 DB 에도 안전하게 적용되도록 IF NOT EXISTS.
+ALTER TABLE players          ADD COLUMN IF NOT EXISTS source VARCHAR;
+ALTER TABLE team_seasons     ADD COLUMN IF NOT EXISTS source VARCHAR;
+ALTER TABLE batting_seasons  ADD COLUMN IF NOT EXISTS source VARCHAR;
+ALTER TABLE pitching_seasons ADD COLUMN IF NOT EXISTS source VARCHAR;
+ALTER TABLE fielding_seasons ADD COLUMN IF NOT EXISTS source VARCHAR;
+ALTER TABLE contracts        ADD COLUMN IF NOT EXISTS source VARCHAR;
+ALTER TABLE transactions     ADD COLUMN IF NOT EXISTS source VARCHAR;
+ALTER TABLE drafts           ADD COLUMN IF NOT EXISTS source VARCHAR;

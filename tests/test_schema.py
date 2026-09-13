@@ -41,6 +41,27 @@ def test_leagues_seeded(con):
     assert leagues == {"KBO", "MLB"}
 
 
+def test_fact_tables_have_source_column(con):
+    # v1.1 (ADR 0008): 소스가 바뀌어도 스키마는 유지되도록 사실 테이블마다 source 컬럼
+    for t in [
+        "players",
+        "team_seasons",
+        "batting_seasons",
+        "pitching_seasons",
+        "fielding_seasons",
+        "contracts",
+        "transactions",
+        "drafts",
+    ]:
+        cols = {
+            r[0]
+            for r in con.execute(
+                f"SELECT column_name FROM duckdb_columns() WHERE table_name = '{t}'"
+            ).fetchall()
+        }
+        assert "source" in cols, t
+
+
 def test_init_is_idempotent(tmp_path):
     p = tmp_path / "t.duckdb"
     init_db(p).close()

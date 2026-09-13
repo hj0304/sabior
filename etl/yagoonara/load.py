@@ -31,12 +31,46 @@ TRANSFORMS = {
 }
 
 BATTING_COLS = [
-    "g", "pa", "ab", "r", "h", "doubles", "triples", "hr", "rbi", "sb", "cs",
-    "bb", "ibb", "so", "hbp", "sf", "sh", "gidp",
+    "g",
+    "pa",
+    "ab",
+    "r",
+    "h",
+    "doubles",
+    "triples",
+    "hr",
+    "rbi",
+    "sb",
+    "cs",
+    "bb",
+    "ibb",
+    "so",
+    "hbp",
+    "sf",
+    "sh",
+    "gidp",
 ]
 PITCHING_COLS = [
-    "g", "gs", "w", "l", "sv", "hld", "cg", "sho", "ip_outs", "bf", "h", "r", "er",
-    "hr", "bb", "ibb", "so", "hbp", "wp", "bk",
+    "g",
+    "gs",
+    "w",
+    "l",
+    "sv",
+    "hld",
+    "cg",
+    "sho",
+    "ip_outs",
+    "bf",
+    "h",
+    "r",
+    "er",
+    "hr",
+    "bb",
+    "ibb",
+    "so",
+    "hbp",
+    "wp",
+    "bk",
 ]
 TEAM_COLS = ["games", "wins", "losses", "ties", "runs_scored", "runs_allowed", "final_rank"]
 
@@ -45,12 +79,16 @@ def load_mapping() -> dict:
     return yaml.safe_load(MAPPING.read_text(encoding="utf-8"))
 
 
-def read_section(con: duckdb.DuckDBPyConnection, base: Path, section: dict) -> tuple[list[dict], list[str]]:
+def read_section(
+    con: duckdb.DuckDBPyConnection, base: Path, section: dict
+) -> tuple[list[dict], list[str]]:
     """섹션 파일을 읽어 스키마 컬럼명으로 바꾼 dict 행 목록과, 파일에 없는 컬럼 목록을 돌려준다."""
     path = base / section["file"]
     if not path.exists():
         raise FileNotFoundError(path)
-    rel = con.execute(f"SELECT * FROM read_csv_auto('{path.as_posix()}', header=true, all_varchar=true)")
+    rel = con.execute(
+        f"SELECT * FROM read_csv_auto('{path.as_posix()}', header=true, all_varchar=true)"
+    )
     file_cols = [d[0] for d in rel.description]
     rows = [dict(zip(file_cols, r, strict=True)) for r in rel.fetchall()]
     colmap: dict[str, str | None] = section.get("columns", {})
@@ -86,7 +124,9 @@ def to_int(v):
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--dir", required=True, help="받은 파일이 있는 폴더 (data/raw/yagoonara/<날짜>)")
+    ap.add_argument(
+        "--dir", required=True, help="받은 파일이 있는 폴더 (data/raw/yagoonara/<날짜>)"
+    )
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
     base = (ROOT / args.dir) if not Path(args.dir).is_absolute() else Path(args.dir)
@@ -112,9 +152,20 @@ def main() -> None:
                 for r in rows:
                     pid = player_id_for(r.get("source_id"), r.get("name"), r.get("birth_date"))
                     con.execute(
-                        "INSERT OR REPLACE INTO players VALUES (?, ?, ?, NULL, TRY_CAST(? AS DATE), ?, ?, ?, ?, NULL)",
-                        [pid, league, r.get("name"), r.get("birth_date"), r.get("bats"), r.get("throws"),
-                         r.get("primary_pos"), to_int(r.get("debut_season"))],
+                        "INSERT OR REPLACE INTO players (player_id, league_origin, name, birth_date, bats, "
+                        "throws, primary_pos, debut_season, source) "
+                        "VALUES (?, ?, ?, TRY_CAST(? AS DATE), ?, ?, ?, ?, ?)",
+                        [
+                            pid,
+                            league,
+                            r.get("name"),
+                            r.get("birth_date"),
+                            r.get("bats"),
+                            r.get("throws"),
+                            r.get("primary_pos"),
+                            to_int(r.get("debut_season")),
+                            source,
+                        ],
                     )
                     if r.get("source_id"):
                         con.execute(
@@ -124,8 +175,10 @@ def main() -> None:
                 total += len(rows)
 
         # batting / pitching
-        for sec, cols, table in (("batting", BATTING_COLS, "batting_seasons"),
-                                 ("pitching", PITCHING_COLS, "pitching_seasons")):
+        for sec, cols, table in (
+            ("batting", BATTING_COLS, "batting_seasons"),
+            ("pitching", PITCHING_COLS, "pitching_seasons"),
+        ):
             if sec not in m or not (base / m[sec]["file"]).exists():
                 continue
             rows, missing = read_section(con, base, m[sec])
@@ -144,8 +197,9 @@ def main() -> None:
                 placeholders = ", ".join("?" * len(cols))
                 con.execute(
                     f"INSERT OR REPLACE INTO {table} (league, season, player_id, team_id, stint, "
-                    f"{', '.join(cols)}, known_at) VALUES (?, ?, ?, ?, 1, {placeholders}, make_date(?, 11, 30))",
-                    [league, season, pid, team_id, *vals, season],
+                    f"{', '.join(cols)}, known_at, source) "
+                    f"VALUES (?, ?, ?, ?, 1, {placeholders}, make_date(?, 11, 30), ?)",
+                    [league, season, pid, team_id, *vals, season, source],
                 )
             total += len(rows)
 
@@ -160,8 +214,9 @@ def main() -> None:
                     vals = [to_int(r.get(c)) for c in TEAM_COLS]
                     con.execute(
                         "INSERT OR REPLACE INTO team_seasons (league, season, team_id, games, wins, losses, ties, "
-                        "runs_scored, runs_allowed, final_rank, known_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, make_date(?, 11, 30))",
-                        [league, season, team_id, *vals, season],
+                        "runs_scored, runs_allowed, final_rank, known_at, source) "
+                        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, make_date(?, 11, 30), ?)",
+                        [league, season, team_id, *vals, season, source],
                     )
                 total += len(rows)
 

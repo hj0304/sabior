@@ -4,3 +4,5 @@ scripts/vram_probe.py 가 자동으로 추가한다. 예산표(Notion 2.1)는 �
 
 | 일시 | 모델 | seq | batch | rank | grad ckpt | peak VRAM (GB) | 스텝/초 | 상태 | 환경 |
 |---|---|---|---|---|---|---|---|---|---|
+| 2026-09-13 16:47 | Qwen/Qwen3-4B-Instruct-2507 | 2048 | 2 | 16 | True | nan | nan | error: AcceleratorError: CUDA error: out of memory
+Search for `cudaErrorMemoryAllocation' in https://docs | win-native |
