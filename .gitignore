@@ -26,3 +26,6 @@ finetune/checkpoints/
 *.gguf
 *.safetensors
 *.bin
+
+# 로컬 양자화 체크포인트
+data/models/

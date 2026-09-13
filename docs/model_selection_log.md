@@ -26,6 +26,14 @@ ADR 0009 의 기준에 따라 후보를 이 장비(RTX 4070 Laptop 8GB)에서 �
 
 무효 측정 (참고): `win-native` 행 전부, 그리고 21:11 이전 `wsl2` 행 (eval 모드로 체크포인팅 미적용 + sysmem 스필). docs/vram_probe_log.md 에 그대로 남겨 둔다.
 
+**Unsloth 스택 측정 (2026-09-13 21:30~, WSL2, 캡 6.5GB, unsloth 2026.3.11, use_gradient_checkpointing="unsloth", chunked CE)**
+
+| 모델 | 적재 (GB) | 성공한 최대 설정 | peak (GB) | 스텝/초 | 비고 |
+|---|---|---|---|---|---|
+| Qwen3-4B-Instruct-2507 | 3.47 | **seq 2048 × batch 2** | 6.34 | 0.15 (약 610 tok/s) | 순정 HF 에서 실패한 2048×2 가 들어간다. 원래 예산표 가정과 일치 |
+| A.X-4.0-Light (7B) | - | (측정 중) | | | 원본 bf16 을 Unsloth 가 로드하며 양자화하는 순간 캡 초과 OOM. nf4 로 미리 양자화한 체크포인트(`scripts/prequantize.py`)로 재측정 |
+| Qwen3-8B | - | 없음 | | | accelerate 가 GPU 에 다 못 올린다고 판단해 CPU 오프로딩 → bnb 학습 불가. 제외 확정 |
+
 해석:
 
 - **병목은 활성값이 아니라 로짓이다.** Qwen 계열은 vocab 이 151,936 이라 seq 2048 에서 fp32 로짓만 1.24GB, 그 grad 까지 2.5GB 가 순간적으로 든다. Unsloth·Liger 의 chunked/fused cross-entropy 는 이걸 피하므로 Unsloth 에서는 4B seq 2048, A.X seq 1024 가 들어갈 가능성이 높다. → W2 남은 작업: Unsloth 설치 후 `--unsloth` 모드 재측정.
