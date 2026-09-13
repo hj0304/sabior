@@ -16,13 +16,21 @@ ADR 0009 의 기준에 따라 후보를 이 장비(RTX 4070 Laptop 8GB)에서 �
 
 측정: `scripts/vram_probe.py`, QLoRA nf4, rank 16, gradient checkpointing, 3 스텝. 환경 컬럼에 win-native / wsl2 구분.
 
-| 모델 | seq | batch | peak VRAM (GB) | 스텝/초 | 상태 | 환경 | 일시 |
-|---|---|---|---|---|---|---|---|
-| Qwen3-4B-Instruct-2507 | 2048 | 2 | | | | | |
-| A.X-4.0-Light | 1024 | 1 | | | | | |
-| Qwen3-8B | 1024 | 1 | | | | | |
+**유효 측정 (2026-09-13 21:12~21:25, WSL2, 하드 캡 6.6GB, 순정 HF QLoRA nf4, rank 16, gradient checkpointing, bf16 임베딩·lm_head, train 모드)**
+
+| 모델 | 적재 (GB) | 성공한 최대 설정 | peak (GB) | 스텝/초 | 실패한 설정 | 판정 (순정 HF 기준) |
+|---|---|---|---|---|---|---|
+| Qwen3-4B-Instruct-2507 | 2.59 | seq 1536 × batch 1 | 6.18 | 0.28 (약 430 tok/s) | 2048×1 OOM (5.88 에서 캡 초과), 2048×2 OOM | 통과. 2048 은 로짓(151,936 vocab × fp32) 때문에 실패 |
+| A.X-4.0-Light (7B) | 4.65 | seq 768 × batch 1 | 6.15 | 0.35 (약 270 tok/s) | 1024×1 OOM | 조건부. 기준(1024×1)에 미달이나 여유가 0.2GB 수준 → Unsloth 재측정 후 판정 |
+| Qwen3-8B | 5.82 | 없음 | - | - | 1024, 768, 512 × 1 모두 OOM | 탈락 후보. 가중치만 5.82GB 라 활성값 여유 0.8GB. lm_head 양자화·8bit 옵티마이저·Unsloth 로 512~768 은 가능할 수 있으나 실용성 낮음 |
+
+무효 측정 (참고): `win-native` 행 전부, 그리고 21:11 이전 `wsl2` 행 (eval 모드로 체크포인팅 미적용 + sysmem 스필). docs/vram_probe_log.md 에 그대로 남겨 둔다.
 
 해석:
+
+- **병목은 활성값이 아니라 로짓이다.** Qwen 계열은 vocab 이 151,936 이라 seq 2048 에서 fp32 로짓만 1.24GB, 그 grad 까지 2.5GB 가 순간적으로 든다. Unsloth·Liger 의 chunked/fused cross-entropy 는 이걸 피하므로 Unsloth 에서는 4B seq 2048, A.X seq 1024 가 들어갈 가능성이 높다. → W2 남은 작업: Unsloth 설치 후 `--unsloth` 모드 재측정.
+- **학습 시간 어림 (4B, seq 1536, 순정 HF):** 430 tok/s → SFT 3천 샘플 × 1,500 토큰 = 4.5M 토큰 ≈ 2.9 시간/에폭. A.X 는 약 4.6 시간/에폭. 야간 1회 학습으로 감당 가능.
+- **Qwen3-8B 는 이 장비의 한계 밖.** 후보에서 내리고, 8B 급 비교 상대는 A.X 4.0 Light 로 한다. 예비인 Kanana 1.5 8B 도 같은 이유로 제외.
 
 - **측정 환경은 WSL2 로 일원화한다 (2026-09-13).** Windows 네이티브 CUDA 는 VRAM 이 부족하면 OOM 을 내는 대신 시스템 RAM(공유 GPU 메모리)으로 넘친다. A.X 4.0 Light seq 1024·batch 1 이 "peak 24.4GB, ok" 로 기록되고 3 스텝에 약 90 분이 걸린 것이 그 증거다. 8GB 카드에서 24GB 는 불가능한 수치이므로 Windows 네이티브 행(`win-native`)은 전부 무효 처리한다. `scripts/vram_probe.py` 는 이제 peak 가 총 VRAM 의 97% 를 넘으면 `spill` 로 표기한다.
 - WSL2 에서는 Windows 가 디스플레이 등으로 약 1.1GB 를 선점해 실제 가용 VRAM 은 약 6.9GB 다. 예산표는 이 값을 기준으로 다시 쓴다.

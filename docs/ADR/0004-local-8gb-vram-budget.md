@@ -16,3 +16,4 @@
 - **학습과 VRAM 측정은 WSL2 Ubuntu 24.04 에서만 한다.** Windows 네이티브 CUDA 는 VRAM 초과 시 OOM 대신 시스템 RAM 으로 넘쳐(공유 GPU 메모리) 측정이 무효가 되고 속도가 수십 배 느려진다. 실측 로그의 `win-native` 행은 참고용으로만 남긴다.
 - WSL2 에서 실제 가용 VRAM 은 약 6.9GB (Windows 가 약 1.1GB 선점). 예산표의 8GB 를 6.9GB 로 읽는다.
 - 환경: `scripts/wsl_setup.sh` (uv, venv ~/.venvs/sabior, HF 캐시 공유) + `build-essential`. 실측은 `scripts/wsl_probe.sh`.
+- **실측 결과 (2026-09-13, 순정 HF QLoRA nf4·rank 16·체크포인팅·캡 6.6GB):** Qwen3-4B 는 seq 1536×1 (peak 6.18GB), A.X 4.0 Light 7B 는 seq 768×1 (6.15GB) 까지. Qwen3-8B 는 가중치만 5.82GB 라 512×1 도 OOM → 로컬 후보에서 제외. 예산표의 "4B 2048×2 / 7-8B 1024×1" 가정은 순정 HF 기준으로는 틀렸고, Unsloth(chunked CE) 재측정으로 갱신한다. 상세: docs/model_selection_log.md 1절.

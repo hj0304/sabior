@@ -2,16 +2,20 @@
 
 사용 (finetune 그룹 필요, WSL2 권장):
     uv run --group finetune python scripts/vram_probe.py --model Qwen/Qwen3-4B-Instruct-2507 --seq-len 2048 --batch 2 --ladder
-    uv run --group finetune python scripts/vram_probe.py --model skt/A.X-4.0-Light --seq-len 1024 --batch 1
+    uv run --group finetune --group unsloth python scripts/vram_probe.py --model skt/A.X-4.0-Light --seq-len 1024 --batch 1 --unsloth
 
 핵심 설계
   - **하드 캡**: NVIDIA Windows/WSL2 드라이버는 VRAM 이 모자라면 OOM 대신 시스템 RAM 으로 넘겨(sysmem fallback)
-    측정을 무효로 만든다. 그래서 torch.cuda.set_per_process_memory_fraction 으로 (가용 VRAM - 여유) 이하로 할당을 제한해
+    측정을 무효로 만든다. torch.cuda.set_per_process_memory_fraction 으로 (가용 VRAM - 여유) 이하로 할당을 제한해
     초과 시 진짜 OOM 이 나게 한다. --cap-gb 로 직접 지정할 수 있다.
   - **설정마다 새 프로세스**: 같은 프로세스에서 사다리를 내려가면 이전 시도의 메모리가 남는다. 부모가 --single 자식을
     설정별로 띄우고 결과 줄(RESULT ...)을 읽는다.
+  - **train 모드 필수**: transformers 는 self.training 일 때만 gradient checkpointing 을 적용한다. from_pretrained 는
+    eval 모드로 로드하므로 model.train() 을 꼭 부른다 (빠지면 활성값이 토큰당 수 MB, 2026-09-13 확인).
   - **fp32 업캐스트 없음**: peft.prepare_model_for_kbit_training 은 임베딩·lm_head 를 fp32 로 올려 8B 에서 2.5GB 를 낭비한다.
-    기본은 bf16 유지 + gradient checkpointing 만 켠다. 비교용으로 --upcast 를 준다.
+    기본은 bf16 유지 + gradient checkpointing 만 켠다. 비교용으로 --upcast.
+  - **--unsloth**: 실제 학습 스택. FastLanguageModel + use_gradient_checkpointing="unsloth" + chunked cross-entropy 로
+    대용량 vocab 로짓 병목을 피한다. unsloth 는 transformers 보다 먼저 import 해야 패치가 걸린다.
   - --ladder 는 OOM 일 때만 더 작은 (seq, batch) 로 내려간다. 환경 오류는 재시도하지 않는다.
 
 결과는 stdout 과 docs/vram_probe_log.md 에 한 줄씩 기록된다.
@@ -53,18 +57,82 @@ def is_oom(e: BaseException) -> bool:
     return "out of memory" in str(e).lower() or type(e).__name__ == "OutOfMemoryError"
 
 
+def _load_hf(args, torch):
+    from peft import LoraConfig, get_peft_model
+    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
+
+    bnb = BitsAndBytesConfig(
+        load_in_4bit=True,
+        bnb_4bit_quant_type="nf4",
+        bnb_4bit_use_double_quant=True,
+        bnb_4bit_compute_dtype=torch.bfloat16,
+    )
+    tok = AutoTokenizer.from_pretrained(args.model)
+    model = AutoModelForCausalLM.from_pretrained(
+        args.model,
+        quantization_config=bnb,
+        device_map={"": 0},
+        dtype=torch.bfloat16,
+        attn_implementation="sdpa",  # eager 는 어텐션 행렬(seq x seq)을 저장해 메모리를 크게 먹는다
+    )
+    model.config.use_cache = False
+    if args.upcast:
+        from peft import prepare_model_for_kbit_training
+
+        model = prepare_model_for_kbit_training(
+            model, use_gradient_checkpointing=not args.no_grad_ckpt
+        )
+    else:
+        if not args.no_grad_ckpt:
+            model.gradient_checkpointing_enable(
+                gradient_checkpointing_kwargs={"use_reentrant": False}
+            )
+        model.enable_input_require_grads()
+    lora = LoraConfig(
+        r=args.rank,
+        lora_alpha=args.rank * 2,
+        lora_dropout=0.05,
+        target_modules=TARGETS,
+        task_type="CAUSAL_LM",
+    )
+    model = get_peft_model(model, lora)
+    return model, tok, bool(getattr(model, "is_gradient_checkpointing", False))
+
+
+def _load_unsloth(args, seq_len: int):
+    from unsloth import FastLanguageModel
+
+    model, tok = FastLanguageModel.from_pretrained(
+        model_name=args.model,
+        max_seq_length=seq_len,
+        load_in_4bit=True,
+        dtype=None,
+    )
+    model = FastLanguageModel.get_peft_model(
+        model,
+        r=args.rank,
+        lora_alpha=args.rank * 2,
+        lora_dropout=0,  # unsloth 의 빠른 경로는 dropout 0 을 요구
+        target_modules=TARGETS,
+        use_gradient_checkpointing="unsloth" if not args.no_grad_ckpt else False,
+        random_state=0,
+    )
+    return model, tok, not args.no_grad_ckpt
+
+
 def single(args: argparse.Namespace) -> dict:
     """자식 프로세스: 한 설정을 측정하고 결과 dict 를 돌려준다."""
     os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+    if args.unsloth:
+        import unsloth  # noqa: F401  (transformers 보다 먼저 import 해야 패치가 걸린다)
     import torch
-    from peft import LoraConfig, get_peft_model
-    from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 
     free, total = torch.cuda.mem_get_info()
     total_gb = total / 2**30
     cap_gb = args.cap_gb if args.cap_gb else (free / 2**30 - args.margin_gb)
     torch.cuda.set_per_process_memory_fraction(min(0.999, cap_gb / total_gb))
-    env = f"{args.env} free={free / 2**30:.1f}/{total_gb:.1f}GB cap={cap_gb:.1f}GB".strip()
+    stack = "unsloth" if args.unsloth else ("hf+upcast" if args.upcast else "hf")
+    env = f"{args.env} {stack} free={free / 2**30:.1f}/{total_gb:.1f}GB cap={cap_gb:.1f}GB".strip()
 
     res = {
         "status": "ok",
@@ -75,52 +143,19 @@ def single(args: argparse.Namespace) -> dict:
         "gc": None,
     }
     try:
-        bnb = BitsAndBytesConfig(
-            load_in_4bit=True,
-            bnb_4bit_quant_type="nf4",
-            bnb_4bit_use_double_quant=True,
-            bnb_4bit_compute_dtype=torch.bfloat16,
-        )
-        tok = AutoTokenizer.from_pretrained(args.model)
-        model = AutoModelForCausalLM.from_pretrained(
-            args.model,
-            quantization_config=bnb,
-            device_map={"": 0},
-            dtype=torch.bfloat16,
-            attn_implementation="sdpa",  # eager 는 어텐션 행렬(seq x seq)을 저장해 메모리를 크게 먹는다
-        )
-        model.config.use_cache = False
-        if args.upcast:
-            from peft import prepare_model_for_kbit_training
-
-            model = prepare_model_for_kbit_training(
-                model, use_gradient_checkpointing=not args.no_grad_ckpt
-            )
+        if args.unsloth:
+            model, tok, gc = _load_unsloth(args, args.seq_len)
         else:
-            if not args.no_grad_ckpt:
-                model.gradient_checkpointing_enable(
-                    gradient_checkpointing_kwargs={"use_reentrant": False}
-                )
-            model.enable_input_require_grads()
-        res["gc"] = bool(getattr(model, "is_gradient_checkpointing", False))
-        lora = LoraConfig(
-            r=args.rank,
-            lora_alpha=args.rank * 2,
-            lora_dropout=0.05,
-            target_modules=TARGETS,
-            task_type="CAUSAL_LM",
-        )
-        model = get_peft_model(model, lora)
-        # transformers 는 self.training 일 때만 gradient checkpointing 을 적용한다. from_pretrained 는 eval 모드로
-        # 로드하므로 train() 을 부르지 않으면 활성값이 전부 저장되어 토큰당 수 MB 가 든다 (2026-09-13 측정에서 확인).
-        model.train()
+            model, tok, gc = _load_hf(args, torch)
+        res["gc"] = gc
+        model.train()  # eval 모드에서는 gradient checkpointing 이 적용되지 않는다
         model.print_trainable_parameters()
         params = [p for p in model.parameters() if p.requires_grad]
         opt = torch.optim.AdamW(params, lr=1e-4)
         torch.cuda.synchronize()
         res["weights"] = torch.cuda.memory_allocated() / 2**30
         print(
-            f"loaded: {res['weights']:.2f} GB allocated | grad ckpt={res['gc']} | cap {cap_gb:.1f} GB"
+            f"loaded: {res['weights']:.2f} GB allocated | grad ckpt={gc} | cap {cap_gb:.1f} GB | {stack}"
         )
 
         vocab = len(tok)
@@ -173,10 +208,9 @@ def run_child(args: argparse.Namespace, seq_len: int, batch: int) -> dict:
     ]
     if args.cap_gb:
         cmd += ["--cap-gb", str(args.cap_gb)]
-    if args.no_grad_ckpt:
-        cmd.append("--no-grad-ckpt")
-    if args.upcast:
-        cmd.append("--upcast")
+    for flag in ("no_grad_ckpt", "upcast", "unsloth"):
+        if getattr(args, flag):
+            cmd.append("--" + flag.replace("_", "-"))
     p = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     res = None
     for line in p.stdout.splitlines():
@@ -211,6 +245,9 @@ def main() -> None:
         help="peft.prepare_model_for_kbit_training 사용 (fp32 업캐스트)",
     )
     ap.add_argument(
+        "--unsloth", action="store_true", help="Unsloth FastLanguageModel 스택으로 측정"
+    )
+    ap.add_argument(
         "--ladder", action="store_true", help="OOM 이면 더 작은 (seq, batch) 로 내려가며 재시도"
     )
     ap.add_argument(
@@ -233,7 +270,7 @@ def main() -> None:
     for seq_len, batch in configs:
         now = datetime.now().strftime("%Y-%m-%d %H:%M")
         print(
-            f"== {args.model} seq={seq_len} batch={batch} rank={args.rank} upcast={args.upcast} =="
+            f"== {args.model} seq={seq_len} batch={batch} rank={args.rank} unsloth={args.unsloth} =="
         )
         res = run_child(args, seq_len, batch)
         env = (
