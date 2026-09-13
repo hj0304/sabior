@@ -12,7 +12,8 @@ export PYTHONIOENCODING=utf-8
 
 echo "== apt =="
 sudo apt-get update -qq
-sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git curl ca-certificates >/dev/null
+# build-essential: triton/torch 컴파일 경로가 C 컴파일러를 요구한다 (없으면 "Failed to find C compiler")
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y -qq git curl ca-certificates build-essential python3-dev >/dev/null
 
 echo "== uv =="
 if ! command -v uv >/dev/null 2>&1; then curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1; fi

@@ -90,6 +90,11 @@ def probe(model_id: str, seq_len: int, batch: int, rank: int, steps: int, grad_c
             print(f"step {step + 1}/{steps} loss={out.loss.item():.3f} peak={cur:.2f} GB")
         sps = steps / (time.time() - t0)
         peak = torch.cuda.max_memory_allocated() / 2**30
+        total_gb = torch.cuda.get_device_properties(0).total_memory / 2**30
+        if peak > total_gb * 0.97:
+            # Windows 네이티브는 VRAM 초과 시 OOM 대신 시스템 RAM 으로 넘쳐(shared memory) 극단적으로 느려진다.
+            # 측정값으로 인정하지 않는다.
+            status = "spill (VRAM 초과, 공유 메모리 사용)"
     except (
         Exception
     ) as e:  # OOM 은 torch 버전에 따라 OutOfMemoryError 또는 AcceleratorError 로 온다
@@ -143,7 +148,8 @@ def main() -> None:
         )
         append_log(row)
         print(row)
-        if status == "ok" or not args.ladder:
+        # ladder 는 OOM/spill 일 때만 더 작은 설정으로 내려간다. 환경 오류(컴파일러 없음 등)는 재시도해도 같다.
+        if status == "ok" or not args.ladder or status.startswith("error"):
             break
 
 

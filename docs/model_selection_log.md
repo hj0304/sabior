@@ -24,6 +24,11 @@ ADR 0009 의 기준에 따라 후보를 이 장비(RTX 4070 Laptop 8GB)에서 �
 
 해석:
 
+- **측정 환경은 WSL2 로 일원화한다 (2026-09-13).** Windows 네이티브 CUDA 는 VRAM 이 부족하면 OOM 을 내는 대신 시스템 RAM(공유 GPU 메모리)으로 넘친다. A.X 4.0 Light seq 1024·batch 1 이 "peak 24.4GB, ok" 로 기록되고 3 스텝에 약 90 분이 걸린 것이 그 증거다. 8GB 카드에서 24GB 는 불가능한 수치이므로 Windows 네이티브 행(`win-native`)은 전부 무효 처리한다. `scripts/vram_probe.py` 는 이제 peak 가 총 VRAM 의 97% 를 넘으면 `spill` 로 표기한다.
+- WSL2 에서는 Windows 가 디스플레이 등으로 약 1.1GB 를 선점해 실제 가용 VRAM 은 약 6.9GB 다. 예산표는 이 값을 기준으로 다시 쓴다.
+- Qwen3-4B nf4 가중치 + LoRA(rank 16) 적재 직후 할당량은 3.34GB (WSL2 측정). 나머지 약 3.5GB 가 활성값·옵티마이저·체크포인트 재계산에 쓸 수 있는 여유다.
+- WSL2 첫 실행에서 "Failed to find C compiler" 오류 → `build-essential` 설치로 해결 (triton/torch 컴파일 경로가 gcc 를 요구). `scripts/wsl_setup.sh` 에 반영할 것.
+
 ## 2. 추론 속도 (W9)
 
 측정: Ollama Q4_K_M, 4K 컨텍스트, 같은 프롬프트 3회 평균.
