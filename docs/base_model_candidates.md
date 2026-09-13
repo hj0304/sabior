@@ -13,7 +13,7 @@
 | 최종 후보 2 (8B, 범용·추론) | `Qwen/Qwen3-8B` | KMMLU 63.53, LiveBench 50.20(추론 강함), 하이브리드 thinking, 툴콜. Apache 2.0 |
 | 예비 | `kakaocorp/kanana-1.5-8b-instruct-2505` | Apache 2.0, Ko-MT-Bench 76.30, FunctionChatBench 58. KMMLU 48.28 은 약점 |
 
-**W14 ablation 을 "A.X 4.0 Light vs Qwen3-8B" 정면 비교로 잡는다.** 한국어 특화 모델과 범용 모델 중 어느 쪽이 도구 호출 에이전트 SFT 에 더 잘 맞는지가 이 프로젝트의 핵심 학습 포인트가 된다.
+**모델은 벤치마크 표가 아니라 이 장비에서 측정한 수치로 확정한다** (ADR 0009, 2026-09-13 사용자 결정). 위 표는 "후보군"이고, VRAM 실측(W2), 추론 속도(W9), 툴콜 신뢰도(W11), 파일럿 SFT(W13)를 거쳐 W14 에 두 후보의 정면 비교로 결정한다. 기록은 docs/model_selection_log.md.
 
 ## 비교표 (모델 카드 수치, A.X 4.0 Light 카드의 비교표 인용)
 

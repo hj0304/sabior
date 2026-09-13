@@ -1,0 +1,106 @@
+# 야구나라 파일 -> sabior 스키마 컬럼 매핑. 회신 파일을 보고 채운다.
+# 좌변: 스키마 컬럼, 우변: 파일 컬럼명. 없는 컬럼은 null.
+# 값 변환이 필요한 컬럼은 transform 에 함수명을 적는다 (etl/yagoonara/load.py 의 TRANSFORMS).
+
+source: yagoonara
+league: KBO
+known_at_rule: season_end   # season_end -> make_date(season, 11, 30)
+
+teams:               # 파일의 팀 표기 -> team_id
+  두산: KBO_OB
+  LG: KBO_LG
+  KIA: KBO_HT
+  삼성: KBO_SS
+  롯데: KBO_LT
+  SSG: KBO_SK
+  SK: KBO_SK
+  NC: KBO_NC
+  KT: KBO_KT
+  키움: KBO_WO
+  넥센: KBO_WO
+  한화: KBO_HH
+  현대: KBO_HD
+  쌍방울: KBO_SB
+  해태: KBO_HT
+  OB: KBO_OB
+  태평양: KBO_HD
+  청보: KBO_HD
+  삼미: KBO_HD
+  빙그레: KBO_HH
+  MBC: KBO_LG
+
+players:
+  file: players.csv            # 예시. 실제 파일명으로 교체
+  columns:
+    source_id: 선수ID
+    name: 선수명
+    birth_date: 생년월일
+    bats: 타석
+    throws: 투구
+    primary_pos: 포지션
+    debut_season: 데뷔연도
+
+batting:
+  file: batting_seasons.csv
+  columns:
+    season: 연도
+    player_source_id: 선수ID
+    team: 팀
+    g: G
+    pa: PA
+    ab: AB
+    r: R
+    h: H
+    doubles: 2B
+    triples: 3B
+    hr: HR
+    rbi: RBI
+    sb: SB
+    cs: CS
+    bb: BB
+    ibb: IBB
+    so: SO
+    hbp: HBP
+    sf: SF
+    sh: SH
+    gidp: GDP
+
+pitching:
+  file: pitching_seasons.csv
+  columns:
+    season: 연도
+    player_source_id: 선수ID
+    team: 팀
+    g: G
+    gs: GS
+    w: W
+    l: L
+    sv: SV
+    hld: HLD
+    ip: IP                     # transform: ip_to_outs -> ip_outs
+    bf: TBF
+    h: H
+    r: R
+    er: ER
+    hr: HR
+    bb: BB
+    ibb: IBB
+    so: SO
+    hbp: HBP
+    wp: WP
+    bk: BK
+  transform:
+    ip: ip_to_outs
+
+team_seasons:
+  file: team_seasons.csv
+  columns:
+    season: 연도
+    team: 팀
+    games: G
+    wins: W
+    losses: L
+    ties: D
+    runs_scored: R
+    runs_allowed: RA
+    final_rank: 순위
