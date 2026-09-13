@@ -39,6 +39,8 @@ finetune = [
     "mlflow>=2.16",
 ]
 serve = ["fastapi>=0.115", "uvicorn>=0.30", "gradio>=4.44"]
+# Unsloth 는 torch/transformers 버전을 강하게 고정하므로 별도 그룹. 사용: uv sync --group finetune --group unsloth
+unsloth = ["unsloth", "unsloth_zoo"]
 
 [tool.uv]
 default-groups = ["dev"]
