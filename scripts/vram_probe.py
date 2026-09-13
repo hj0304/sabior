@@ -83,7 +83,11 @@ def single(args: argparse.Namespace) -> dict:
         )
         tok = AutoTokenizer.from_pretrained(args.model)
         model = AutoModelForCausalLM.from_pretrained(
-            args.model, quantization_config=bnb, device_map={"": 0}, dtype=torch.bfloat16
+            args.model,
+            quantization_config=bnb,
+            device_map={"": 0},
+            dtype=torch.bfloat16,
+            attn_implementation="sdpa",  # eager 는 어텐션 행렬(seq x seq)을 저장해 메모리를 크게 먹는다
         )
         model.config.use_cache = False
         if args.upcast:
@@ -107,6 +111,9 @@ def single(args: argparse.Namespace) -> dict:
             task_type="CAUSAL_LM",
         )
         model = get_peft_model(model, lora)
+        # transformers 는 self.training 일 때만 gradient checkpointing 을 적용한다. from_pretrained 는 eval 모드로
+        # 로드하므로 train() 을 부르지 않으면 활성값이 전부 저장되어 토큰당 수 MB 가 든다 (2026-09-13 측정에서 확인).
+        model.train()
         model.print_trainable_parameters()
         params = [p for p in model.parameters() if p.requires_grad]
         opt = torch.optim.AdamW(params, lr=1e-4)

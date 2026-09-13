@@ -27,7 +27,10 @@ ADR 0009 의 기준에 따라 후보를 이 장비(RTX 4070 Laptop 8GB)에서 �
 - **측정 환경은 WSL2 로 일원화한다 (2026-09-13).** Windows 네이티브 CUDA 는 VRAM 이 부족하면 OOM 을 내는 대신 시스템 RAM(공유 GPU 메모리)으로 넘친다. A.X 4.0 Light seq 1024·batch 1 이 "peak 24.4GB, ok" 로 기록되고 3 스텝에 약 90 분이 걸린 것이 그 증거다. 8GB 카드에서 24GB 는 불가능한 수치이므로 Windows 네이티브 행(`win-native`)은 전부 무효 처리한다. `scripts/vram_probe.py` 는 이제 peak 가 총 VRAM 의 97% 를 넘으면 `spill` 로 표기한다.
 - WSL2 에서는 Windows 가 디스플레이 등으로 약 1.1GB 를 선점해 실제 가용 VRAM 은 약 6.9GB 다. 예산표는 이 값을 기준으로 다시 쓴다.
 - Qwen3-4B nf4 가중치 + LoRA(rank 16) 적재 직후 할당량은 3.34GB (WSL2 측정). 나머지 약 3.5GB 가 활성값·옵티마이저·체크포인트 재계산에 쓸 수 있는 여유다.
-- WSL2 첫 실행에서 "Failed to find C compiler" 오류 → `build-essential` 설치로 해결 (triton/torch 컴파일 경로가 gcc 를 요구). `scripts/wsl_setup.sh` 에 반영할 것.
+- WSL2 첫 실행에서 "Failed to find C compiler" 오류 → `build-essential` 설치로 해결 (triton/torch 컴파일 경로가 gcc 를 요구). `scripts/wsl_setup.sh` 에 반영.
+- **하드 캡 도입.** 드라이버의 sysmem fallback 을 막기 위해 `torch.cuda.set_per_process_memory_fraction` 으로 (가용 6.9GB − 0.3GB) = 6.6GB 캡을 건다. 초과 시 진짜 OOM.
+- **fp32 업캐스트 제거 효과.** `prepare_model_for_kbit_training` 을 쓰지 않고 bf16 을 유지하자 적재량이 Qwen3-4B 3.34 → 2.59GB, A.X 7B 6.03 → 4.65GB, Qwen3-8B 8.15 → 5.82GB 로 줄었다 (LoRA rank 16 포함).
+- **eval 모드 함정 (2026-09-13 21:11 측정).** 세 모델 모두 seq 512 에서도 OOM 이었고 활성값이 토큰당 약 6.6MB 로 나왔다. 원인은 `from_pretrained` 가 eval 모드로 로드하고 transformers 가 `self.training` 일 때만 gradient checkpointing 을 적용하기 때문. `model.train()` 한 줄이 빠져 체크포인팅이 무효였다. Trainer 를 쓰면 자동이지만 직접 루프를 짤 때 반드시 기억할 것. 수정 후 재측정.
 
 ## 2. 추론 속도 (W9)
 
