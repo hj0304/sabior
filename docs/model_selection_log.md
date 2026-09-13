@@ -31,8 +31,14 @@ ADR 0009 의 기준에 따라 후보를 이 장비(RTX 4070 Laptop 8GB)에서 �
 | 모델 | 적재 (GB) | 성공한 최대 설정 | peak (GB) | 스텝/초 | 비고 |
 |---|---|---|---|---|---|
 | Qwen3-4B-Instruct-2507 | 3.47 | **seq 2048 × batch 2** | 6.34 | 0.15 (약 610 tok/s) | 순정 HF 에서 실패한 2048×2 가 들어간다. 원래 예산표 가정과 일치 |
-| A.X-4.0-Light (7B) | - | (측정 중) | | | 원본 bf16 을 Unsloth 가 로드하며 양자화하는 순간 캡 초과 OOM. nf4 로 미리 양자화한 체크포인트(`scripts/prequantize.py`)로 재측정 |
+| A.X-4.0-Light (7B, nf4 사전 양자화) | 4.68 | **seq 1024 × batch 1** | 5.60 | 0.28 (약 290 tok/s) | 원본 bf16 을 Unsloth 가 로드하며 양자화하면 캡 초과 OOM → `scripts/prequantize.py` 로 nf4 저장(4.8GB) 후 로드하면 통과. 여유 0.9GB 라 1536×1 또는 1024×2 도 가능성 있음 (W3 에 추가 측정) |
 | Qwen3-8B | - | 없음 | | | accelerate 가 GPU 에 다 못 올린다고 판단해 CPU 오프로딩 → bnb 학습 불가. 제외 확정 |
+
+**W2 VRAM 판정 (2026-09-13)**
+- 4B 주력: `Qwen/Qwen3-4B-Instruct-2507`, Unsloth, seq 2048 × batch 2 (누적 8 → 유효 배치 16). 통과.
+- 7B 후보: `skt/A.X-4.0-Light`, nf4 사전 양자화 + Unsloth, seq 1024 × batch 1 (누적 16). 통과.
+- 제외: `Qwen/Qwen3-8B`, `kakaocorp/kanana-1.5-8b` (같은 8B 급). W14 정면 비교는 **Qwen3-4B (범용 소형) vs A.X 4.0 Light (한국어 특화 7B)** 로 바꾼다.
+- 학습 스택은 Unsloth 로 확정한다. 순정 HF 는 대용량 vocab 로짓 때문에 같은 VRAM 에서 시퀀스가 25~50% 짧아진다.
 
 해석:
 

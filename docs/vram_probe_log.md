@@ -55,3 +55,9 @@ Search for `cudaErrorMemoryAllocation' in https://docs | win-native |
 | 2026-09-13 21:19 | Qwen/Qwen3-8B | 1024 | 1 | 16 | True | 6.42 | nan | OOM | wsl2 free=6.9/8.0GB cap=6.6GB w=5.82GB gc=True |
 | 2026-09-13 21:22 | Qwen/Qwen3-8B | 768 | 1 | 16 | True | 6.27 | nan | OOM | wsl2 free=6.9/8.0GB cap=6.6GB w=5.82GB gc=True |
 | 2026-09-13 21:23 | Qwen/Qwen3-8B | 512 | 1 | 16 | True | 6.41 | nan | OOM | wsl2 free=6.9/8.0GB cap=6.6GB w=5.82GB gc=True |
+| 2026-09-13 21:30 | Qwen/Qwen3-4B-Instruct-2507 | 2048 | 2 | 16 | True | 6.34 | 0.15 | ok | wsl2 unsloth free=6.8/8.0GB cap=6.5GB w=3.47GB gc=True |
+| 2026-09-13 21:33 | skt/A.X-4.0-Light | 1024 | 1 | 16 | True | 6.52 | nan | OOM | wsl2 unsloth free=6.8/8.0GB cap=6.5GB w=nanGB gc=None |
+| 2026-09-13 21:34 | skt/A.X-4.0-Light | 768 | 1 | 16 | True | 6.51 | nan | OOM | wsl2 unsloth free=6.8/8.0GB cap=6.5GB w=nanGB gc=None |
+| 2026-09-13 21:35 | skt/A.X-4.0-Light | 512 | 1 | 16 | True | 6.52 | nan | OOM | wsl2 unsloth free=6.8/8.0GB cap=6.5GB w=nanGB gc=None |
+| 2026-09-13 21:36 | Qwen/Qwen3-8B | 768 | 1 | 16 | True | 0.04 | nan | error: ValueError: Some modules are dispatched on the CPU or the disk. Make sure you have | wsl2 unsloth free=6.8/8.0GB cap=6.5GB w=nanGB gc=None |
+| 2026-09-13 21:43 | /mnt/c/Users/SSAFY/Desktop/sabior/data/models/A.X-4.0-Light-bnb-4bit | 1024 | 1 | 16 | True | 5.60 | 0.28 | ok | wsl2 unsloth free=6.8/8.0GB cap=6.5GB w=4.68GB gc=True |

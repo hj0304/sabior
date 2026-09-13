@@ -26,5 +26,11 @@
 
 ## 결과
 - W2 VRAM 실측 대상: Qwen3-4B-Instruct-2507, A.X-4.0-Light, Qwen3-8B. 결과는 docs/vram_probe_log.md 에 자동 기록, 해석은 docs/model_selection_log.md 에.
+
+## 갱신 (2026-09-13, W2 VRAM 실측 완료)
+- **통과**: Qwen3-4B-Instruct-2507 (Unsloth, seq 2048×batch 2, peak 6.34GB), A.X-4.0-Light (nf4 사전 양자화 + Unsloth, seq 1024×batch 1, peak 5.60GB).
+- **제외**: Qwen3-8B (가중치만 5.8GB, 512×1 도 OOM, Unsloth 는 CPU 오프로딩 시도). 같은 이유로 Kanana 1.5 8B 도 제외.
+- **W14 정면 비교 상대 변경**: A.X 4.0 Light vs Qwen3-8B → **Qwen3-4B vs A.X 4.0 Light**. 범용 소형 모델과 한국어 특화 7B 의 대결이라는 학습 포인트는 유지된다.
+- **학습 스택 확정**: Unsloth (chunked cross-entropy 가 151k vocab 로짓 병목을 해소). 측정·학습은 WSL2 에서만 (ADR 0004 갱신).
 - `finetune/configs/` 에 후보별 설정을 둔다. 모델을 바꿔도 데이터·평가는 동일하게 유지해 비교가 공정하도록 한다.
 - 이유가 사라지면(예: Unsloth 가 Qwen3.5 QLoRA 를 지원) 후보군을 재검토한다.

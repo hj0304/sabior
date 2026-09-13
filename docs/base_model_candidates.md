@@ -10,8 +10,8 @@
 |---|---|---|
 | 반복 실험 (4B) | `Qwen/Qwen3-4B-Instruct-2507` | 텍스트 전용, non-thinking 전용(think 블록 없음 → SFT 데이터 단순), 툴콜 지원, BFCL-v3 61.9, Apache 2.0, 컨텍스트 262K |
 | 최종 후보 1 (7B, 한국어 특화) | `skt/A.X-4.0-Light` | Qwen2.5 기반 7B, Apache 2.0. KMMLU 64.15, **Ko-MT-Bench 79.50**(Qwen3-8B 64.06), Ko-IFEval 72.99. hermes 툴콜 파서 지원. 컨텍스트 16K(충분) |
-| 최종 후보 2 (8B, 범용·추론) | `Qwen/Qwen3-8B` | KMMLU 63.53, LiveBench 50.20(추론 강함), 하이브리드 thinking, 툴콜. Apache 2.0 |
-| 예비 | `kakaocorp/kanana-1.5-8b-instruct-2505` | Apache 2.0, Ko-MT-Bench 76.30, FunctionChatBench 58. KMMLU 48.28 은 약점 |
+| ~~최종 후보 2 (8B)~~ 제외 | `Qwen/Qwen3-8B` | 2026-09-13 실측: nf4 가중치만 5.8GB, seq 512 도 OOM. 이 장비 한계 밖 (docs/model_selection_log.md) |
+| ~~예비~~ 제외 | `kakaocorp/kanana-1.5-8b-instruct-2505` | 같은 8B 급이라 같은 이유로 제외 |
 
 **모델은 벤치마크 표가 아니라 이 장비에서 측정한 수치로 확정한다** (ADR 0009, 2026-09-13 사용자 결정). 위 표는 "후보군"이고, VRAM 실측(W2), 추론 속도(W9), 툴콜 신뢰도(W11), 파일럿 SFT(W13)를 거쳐 W14 에 두 후보의 정면 비교로 결정한다. 기록은 docs/model_selection_log.md.
 
