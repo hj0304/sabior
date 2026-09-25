@@ -34,6 +34,8 @@ ADR 0009 의 기준에 따라 후보를 이 장비(RTX 4070 Laptop 8GB)에서 �
 | A.X-4.0-Light (7B, nf4 사전 양자화) | 4.68 | **seq 1024 × batch 1** | 5.60 | 0.28 (약 290 tok/s) | 원본 bf16 을 Unsloth 가 로드하며 양자화하면 캡 초과 OOM → `scripts/prequantize.py` 로 nf4 저장(4.8GB) 후 로드하면 통과. 여유 0.9GB 라 1536×1 또는 1024×2 도 가능성 있음 (W3 에 추가 측정) |
 | Qwen3-8B | - | 없음 | | | accelerate 가 GPU 에 다 못 올린다고 판단해 CPU 오프로딩 → bnb 학습 불가. 제외 확정 |
 
+**W3 추가 측정 (2026-09-25)**: A.X seq 1536×1 통과 (5.78GB), A.X seq 1024×2 통과 (6.01GB), Qwen3-4B rank 32 seq 2048×2 OOM (6.15GB 에서 캡 초과). A.X 도 seq 1536 까지 쓸 수 있어 두 후보를 **seq 1536 동일 조건**으로 비교할 수 있다.
+
 **W2 VRAM 판정 (2026-09-13)**
 - 4B 주력: `Qwen/Qwen3-4B-Instruct-2507`, Unsloth, seq 2048 × batch 2 (누적 8 → 유효 배치 16). 통과.
 - 7B 후보: `skt/A.X-4.0-Light`, nf4 사전 양자화 + Unsloth, seq 1024 × batch 1 (누적 16). 통과.

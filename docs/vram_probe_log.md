@@ -61,3 +61,6 @@ Search for `cudaErrorMemoryAllocation' in https://docs | win-native |
 | 2026-09-13 21:35 | skt/A.X-4.0-Light | 512 | 1 | 16 | True | 6.52 | nan | OOM | wsl2 unsloth free=6.8/8.0GB cap=6.5GB w=nanGB gc=None |
 | 2026-09-13 21:36 | Qwen/Qwen3-8B | 768 | 1 | 16 | True | 0.04 | nan | error: ValueError: Some modules are dispatched on the CPU or the disk. Make sure you have | wsl2 unsloth free=6.8/8.0GB cap=6.5GB w=nanGB gc=None |
 | 2026-09-13 21:43 | /mnt/c/Users/SSAFY/Desktop/sabior/data/models/A.X-4.0-Light-bnb-4bit | 1024 | 1 | 16 | True | 5.60 | 0.28 | ok | wsl2 unsloth free=6.8/8.0GB cap=6.5GB w=4.68GB gc=True |
+| 2026-09-25 19:05 | /mnt/c/Users/SSAFY/Desktop/sabior/data/models/A.X-4.0-Light-bnb-4bit | 1536 | 1 | 16 | True | 5.78 | 0.16 | ok | wsl2 unsloth free=6.8/8.0GB cap=6.5GB w=4.68GB gc=True |
+| 2026-09-25 19:07 | /mnt/c/Users/SSAFY/Desktop/sabior/data/models/A.X-4.0-Light-bnb-4bit | 1024 | 2 | 16 | True | 6.01 | 0.17 | ok | wsl2 unsloth free=6.8/8.0GB cap=6.5GB w=4.68GB gc=True |
+| 2026-09-25 19:09 | Qwen/Qwen3-4B-Instruct-2507 | 2048 | 2 | 32 | True | 6.15 | nan | OOM | wsl2 unsloth free=6.8/8.0GB cap=6.5GB w=3.59GB gc=True |
