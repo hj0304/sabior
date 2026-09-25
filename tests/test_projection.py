@@ -110,3 +110,21 @@ def test_intervals_monotone_and_calibrated(con):
     assert (q[cols].diff(axis=1).iloc[:, 1:] >= 0).all().all()
     cov = coverage(con, "MLB", 2024, 2025)
     assert 0.70 < cov["cover80"].mean() < 0.90
+
+
+@needs_db
+def test_marcel_plus_default_equals_marcel(con):
+    # 기본 파라미터의 Marcel+ 는 Marcel 과 같은 예측을 내야 한다 (일반화가 맞는지 확인)
+    from models.projection import marcel_plus
+
+    a = marcel.project(con, "MLB", 2024).set_index("player_id")["proj_woba"]
+    b = marcel_plus.project(con, "MLB", 2024).set_index("player_id")["proj_woba"]
+    assert (a - b.reindex(a.index)).abs().max() < 1e-12
+
+
+@needs_db
+def test_marcel_plus_beats_marcel_on_holdout(con):
+    from models.projection import marcel_plus
+
+    ev = marcel_plus.Evaluator(con, "MLB", [2023, 2024, 2025])
+    assert ev.rmse(marcel_plus.load_params()) < ev.rmse(marcel_plus.MARCEL)

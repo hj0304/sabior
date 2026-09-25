@@ -79,10 +79,19 @@ def model_marcel(con, league: str, target: int) -> pd.Series:
     return marcel.project(con, league, target).set_index("player_id")["proj_woba"]
 
 
+def model_marcel_plus(con, league: str, target: int) -> pd.Series:
+    from models.projection import marcel_plus
+
+    return marcel_plus.project(con, league, target, marcel_plus.load_params()).set_index(
+        "player_id"
+    )["proj_woba"]
+
+
 MODELS: dict[str, ModelFn] = {
     "league_avg": baseline_league_avg,
     "last_year": baseline_last_year,
     "marcel": model_marcel,
+    "marcel_plus": model_marcel_plus,
 }
 
 
