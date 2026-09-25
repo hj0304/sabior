@@ -69,9 +69,19 @@ def _as_of_expr(as_of: str | None, season: int) -> tuple[str, list]:
 
 
 def batting_line(
-    con, player_id: str, season: int, as_of: str | None = None, park_factor: float = 1.0
+    con,
+    player_id: str,
+    season: int,
+    as_of: str | None = None,
+    park_factor: float | None = None,
+    park_method: str | None = None,
 ) -> dict | None:
-    """시즌 타격 라인(stint 합산)과 파생 지표. 행이 없으면 None."""
+    """시즌 타격 라인(stint 합산)과 파생 지표. 행이 없으면 None.
+
+    파크팩터: park_factor 를 직접 주거나, park_method(예: 'lahman_bpf')를 주면 park_factors 에서 팀별 PA 가중
+    평균으로 찾는다. 둘 다 없으면 중립 1.0. 기본이 중립인 이유: Lahman BPF 를 적용하면 FanGraphs wRC+ 와의
+    오차가 평균 3.3 → 6.0 점으로 커졌다 (2026-09-25, docs/weekly/2026-W39_P1-W3.md).
+    """
     expr, params = _as_of_expr(as_of, season)
     sums = ", ".join(f"sum(COALESCE({c}, 0)) AS {c}" for c in BATTING_SUM_COLS)
     row = con.execute(
@@ -104,6 +114,13 @@ def batting_line(
         hr=d["hr"],
         sf=d["sf"],
     )
+    if park_factor is None:
+        if park_method:
+            from stats.park import player_park_factor
+
+            park_factor = player_park_factor(con, d["league"], player_id, season, park_method)
+        else:
+            park_factor = 1.0
     d["woba"] = w
     d["wraa"] = wraa(c, w, d["pa"])
     d["wrc"] = wrc(c, w, d["pa"])
