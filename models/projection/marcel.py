@@ -124,5 +124,7 @@ def project(con, league: str, target: int) -> pd.DataFrame:
     out["proj_pa"] = proj_pa
     out["age"] = age
     out["n_seasons"] = (pa_by_ago > 0).sum(axis=1)
+    out["w_pa"] = agg["pa"]  # 5/4/3 가중 타석 합. 신뢰도 = w_pa / (w_pa + 1200)
+    out["reliability"] = agg["pa"] / (agg["pa"] + REGRESS_PA)
     out["lg_woba_prev"] = c.lg_woba
     return out.reset_index()

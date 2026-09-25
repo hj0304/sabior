@@ -99,3 +99,14 @@ def test_marcel_beats_baselines(con):
     assert s.loc["marcel", "rmse_w"] < s.loc["league_avg", "rmse_w"] < s.loc["last_year", "rmse_w"]
     sp = summarize(run_pitching(con, "MLB", 2023, 2024))
     assert sp.loc["marcel", "rmse_w"] < sp.loc["league_avg", "rmse_w"]
+
+
+@needs_db
+def test_intervals_monotone_and_calibrated(con):
+    from models.projection.intervals import calibrate, coverage
+
+    q = calibrate(con, "MLB", 2025)
+    cols = ["p10", "p25", "p50", "p75", "p90"]
+    assert (q[cols].diff(axis=1).iloc[:, 1:] >= 0).all().all()
+    cov = coverage(con, "MLB", 2024, 2025)
+    assert 0.70 < cov["cover80"].mean() < 0.90
