@@ -29,3 +29,6 @@ finetune/checkpoints/
 
 # 로컬 양자화 체크포인트
 data/models/
+
+# Unsloth 가 실행 중 생성하는 컴파일 캐시
+unsloth_compiled_cache/
