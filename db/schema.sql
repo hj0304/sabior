@@ -263,3 +263,31 @@ ALTER TABLE fielding_seasons ADD COLUMN IF NOT EXISTS source VARCHAR;
 ALTER TABLE contracts        ADD COLUMN IF NOT EXISTS source VARCHAR;
 ALTER TABLE transactions     ADD COLUMN IF NOT EXISTS source VARCHAR;
 ALTER TABLE drafts           ADD COLUMN IF NOT EXISTS source VARCHAR;
+
+-- v1.2 (2026-09-25, W7): 팀 시즌의 소속 리그·지구 (MLB AL/NL·지구, KBO 는 NULL). 포스트시즌 판정용.
+ALTER TABLE team_seasons ADD COLUMN IF NOT EXISTS sub_league VARCHAR;
+ALTER TABLE team_seasons ADD COLUMN IF NOT EXISTS division VARCHAR;
+
+-- 팀 시뮬레이션 배치 산출물 (docs/tool_api_spec.md). 에이전트·웹은 이 테이블을 읽는다.
+CREATE TABLE IF NOT EXISTS team_sim_results (
+    league          VARCHAR NOT NULL,
+    season          INTEGER NOT NULL,
+    team_id         VARCHAR NOT NULL,
+    model_version   VARCHAR NOT NULL,
+    as_of           DATE NOT NULL,
+    roster_mode     VARCHAR NOT NULL,         -- 'prior_roster' | 'actual_usage' | 'user'
+    proj_rs         DOUBLE,
+    proj_ra         DOUBLE,
+    exp_wpct        DOUBLE,
+    exp_wins        DOUBLE,
+    wins_p10        DOUBLE,
+    wins_p25        DOUBLE,
+    wins_p50        DOUBLE,
+    wins_p75        DOUBLE,
+    wins_p90        DOUBLE,
+    postseason_prob DOUBLE,
+    rank_probs      JSON,
+    assumptions     JSON,
+    created_at      TIMESTAMP DEFAULT current_timestamp,
+    PRIMARY KEY (league, season, team_id, model_version, as_of, roster_mode)
+);

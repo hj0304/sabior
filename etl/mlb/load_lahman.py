@@ -89,12 +89,12 @@ def load(con) -> dict[str, int]:
         f"""
         INSERT OR REPLACE INTO team_seasons
             (league, season, team_id, games, wins, losses, ties, runs_scored, runs_allowed,
-             home_park_id, final_rank, postseason, known_at, source)
+             home_park_id, final_rank, postseason, known_at, source, sub_league, division)
         SELECT 'MLB', yearID, 'MLB_' || teamID, G, W, L, 0, R, RA, park, Rank,
                CASE WHEN WSWin = 'Y' THEN 'WS_WIN'
                     WHEN LgWin = 'Y' THEN 'WS_LOSE'
                     WHEN DivWin = 'Y' OR WCWin = 'Y' THEN 'PO' END,
-               {KNOWN_AT}, '{SOURCE}'
+               {KNOWN_AT}, '{SOURCE}', lgID, divID
         FROM {teams}
         """
     )
