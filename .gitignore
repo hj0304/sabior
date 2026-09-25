@@ -32,3 +32,6 @@ data/models/
 
 # Unsloth 가 실행 중 생성하는 컴파일 캐시
 unsloth_compiled_cache/
+
+# 에이전트 실행 로그 (질문·도구 결과 원문, SFT 합성용)
+data/agent_logs/

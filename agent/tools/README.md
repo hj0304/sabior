@@ -1,4 +1,6 @@
-# 도구 레이어 계획 (W2 초안, W9 구현)
+# 도구 레이어 (W2 초안, 2026-09-25 골격 구현)
+
+구현 완료: search_player, get_batting_season, get_pitching_season, get_wrc_plus_leaders(계획표의 get_league_leaders), get_league_constants, get_team_season, project_player, project_team, estimate_fa_value, list_fa_contracts(계획표의 list_fa_class 대체), get_rule. 미구현: compare_players, estimate_fa_destinations, simulate_compensation, search_news.
 
 LLM 이 호출하는 함수 집합. 입력은 pydantic 모델, 출력은 JSON 직렬화 가능한 dict. 모든 호출은 레지스트리에 로그로 남는다.
 

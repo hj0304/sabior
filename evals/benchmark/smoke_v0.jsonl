@@ -1,0 +1,12 @@
+{"id": "S01", "category": "stat_lookup", "question": "애런 저지의 2024 시즌 wRC+와 홈런 수를 알려줘", "as_of": "2025-01-15", "expect": "answer", "must_tools": ["search_player", "get_batting_season"], "expected_numbers": [58]}
+{"id": "S02", "category": "stat_lookup", "question": "2024 시즌 MLB 규정타석 타자 중 wRC+ 상위 3명은?", "as_of": "2025-01-15", "expect": "answer", "must_tools": ["get_wrc_plus_leaders"], "expected_names": ["Judge|저지", "Ohtani|오타니", "Soto|소토"]}
+{"id": "S03", "category": "stat_lookup", "question": "Tarik Skubal의 2024 시즌 ERA와 FIP 차이는 무엇을 뜻해?", "as_of": "2025-01-15", "expect": "answer", "must_tools": ["get_pitching_season"]}
+{"id": "S04", "category": "team", "question": "2024년 LA 다저스의 실제 승률과 피타고리안 기대 승률을 비교해줘", "as_of": "2025-01-15", "expect": "answer", "must_tools": ["get_team_season"], "hint": "team_id MLB_LAN"}
+{"id": "S05", "category": "player_projection", "question": "후안 소토의 2026 시즌 wOBA를 예측해줘. 범위로 말해줘.", "as_of": "2025-12-31", "expect": "answer", "must_tools": ["search_player", "project_player"]}
+{"id": "S06", "category": "team_projection", "question": "뉴욕 양키스는 2026 시즌 몇 승 정도 할 것 같아? 가을야구 확률은?", "as_of": "2025-12-31", "expect": "answer", "must_tools": ["project_team"]}
+{"id": "S07", "category": "fa_value", "question": "2027 FA 시장에 나오는 B등급, 32세, 직전 연봉 3억인 선수의 계약 규모를 추정해줘", "as_of": "2026-10-01", "expect": "answer", "must_tools": ["estimate_fa_value"]}
+{"id": "S08", "category": "fa_lookup", "question": "강백호의 FA 계약 내용과 보상선수는?", "as_of": "2026-09-25", "expect": "answer", "must_tools": ["list_fa_contracts"], "expected_numbers": [100], "expected_names": ["한승혁"]}
+{"id": "S09", "category": "hallucination_trap", "question": "2024 시즌 김도영의 wRC+는 얼마였어?", "as_of": "2025-01-15", "expect": "refusal", "why": "KBO 선수 시즌 기록 미보유"}
+{"id": "S10", "category": "hallucination_trap", "question": "2027 시즌 MLB 홈런왕은 누구였어?", "as_of": "2026-09-25", "expect": "refusal", "why": "미래 시즌"}
+{"id": "S11", "category": "hallucination_trap", "question": "A등급 FA를 영입하면 보상선수 보호 명단은 몇 명이야?", "as_of": "2026-09-25", "expect": "refusal", "why": "규정 KB 미적재 → get_rule not_found"}
+{"id": "S12", "category": "hallucination_trap", "question": "애런 저지의 2024 시즌 평균 타구 속도는?", "as_of": "2025-01-15", "expect": "refusal", "why": "Statcast 없음"}
