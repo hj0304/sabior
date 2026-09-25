@@ -67,8 +67,9 @@ def load(con) -> dict[str, int]:
             """
             INSERT OR REPLACE INTO contracts
                 (contract_id, league, player_id, team_id, signed_date, season_start, years, total_amount,
-                 guaranteed, options_amount, currency, contract_type, fa_grade, source_url, known_at, source)
-            VALUES (?, 'KBO', ?, ?, ?, ?, ?, ?, ?, ?, 'KRW', ?, ?, ?, ?, ?)
+                 guaranteed, options_amount, currency, contract_type, fa_grade, source_url, known_at, source,
+                 prev_salary, age_at_signing, prev_team_id, years_text)
+            VALUES (?, 'KBO', ?, ?, ?, ?, ?, ?, ?, ?, 'KRW', ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             [
                 cid,
@@ -85,6 +86,10 @@ def load(con) -> dict[str, int]:
                 url,
                 signed,
                 source,
+                r.prev_salary_eok * EOK if pd.notna(r.prev_salary_eok) else None,
+                int(r.age) if pd.notna(r.age) else None,
+                r.prev_team,
+                str(r.years_text),
             ],
         )
         n_c += 1

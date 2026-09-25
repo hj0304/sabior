@@ -291,3 +291,9 @@ CREATE TABLE IF NOT EXISTS team_sim_results (
     created_at      TIMESTAMP DEFAULT current_timestamp,
     PRIMARY KEY (league, season, team_id, model_version, as_of, roster_mode)
 );
+
+-- v1.3 (2026-09-25, W8): FA 금액 모델 피처. 계약 직전 시즌 연봉과 공시 기준 나이.
+ALTER TABLE contracts ADD COLUMN IF NOT EXISTS prev_salary DECIMAL(18,2);
+ALTER TABLE contracts ADD COLUMN IF NOT EXISTS age_at_signing INTEGER;
+ALTER TABLE contracts ADD COLUMN IF NOT EXISTS prev_team_id VARCHAR;
+ALTER TABLE contracts ADD COLUMN IF NOT EXISTS years_text VARCHAR;
